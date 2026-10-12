@@ -79,7 +79,7 @@ water=ndi.binary_opening(water,iterations=1)
 wd=ndi.distance_transform_edt(water)
 extra=(wd>=4*F).astype(np.int32)+(wd>=9*F)+(wd>=14*F)
 surf=np.maximum(np.floor(Hw-0.3).astype(np.int32),gtop)
-bed=np.minimum(gtop,surf-1)-extra
+bed=surf-1  # water exactly one block deep everywhere
 wl=np.where(water,surf,-1)
 # smooth isolated 1-voxel spikes/pits in gtop
 med=ndi.median_filter(gtop,3)
@@ -238,8 +238,35 @@ torch=mstarts(('torch','water_creep_camp_torch')); lant=mstarts(('lantern_of_sig
 shopR=mstarts(('good_shop001','secretshop_radiant')); shopD=mstarts(('bad_shop','secretshop_dire'))
 urn=mstarts(('urn',))
 stash=mstarts(('neutral_stash_box',))
+# ---- architectural trims: corner pillars, copings, plinths ----
+TRIM={'stone_bricks':('polished_andesite','mossy_stone_bricks'),'mossy_stone_bricks':('stone_bricks','mossy_cobblestone'),'cracked_stone_bricks':('stone_bricks','cobblestone'),
+ 'cobblestone':('stone_bricks','mossy_cobblestone'),'mossy_cobblestone':('mossy_stone_bricks','cobblestone'),'polished_andesite':('stone_bricks','andesite'),'andesite':('polished_andesite','cobblestone'),
+ 'stone':('stone_bricks','cobblestone'),'smooth_stone':('stone_bricks','stone'),'chiseled_stone_bricks':('stone_bricks','stone_bricks'),
+ 'deepslate_bricks':('polished_deepslate','cobbled_deepslate'),'deepslate_tiles':('polished_deepslate','cobbled_deepslate'),'polished_deepslate':('deepslate_bricks','cobbled_deepslate'),'cobbled_deepslate':('polished_deepslate','deepslate_tiles'),
+ 'blackstone':('polished_blackstone_bricks','blackstone'),'polished_blackstone':('polished_blackstone_bricks','blackstone'),'polished_blackstone_bricks':('polished_blackstone','blackstone'),'gilded_blackstone':('polished_blackstone','blackstone'),
+ 'tuff':('polished_tuff','tuff_bricks'),'tuff_bricks':('polished_tuff','tuff'),'polished_tuff':('tuff_bricks','tuff'),'chiseled_tuff':('polished_tuff','tuff'),
+ 'nether_bricks':('red_nether_bricks','blackstone'),'red_nether_bricks':('nether_bricks','blackstone'),'bricks':('mud_bricks','cobblestone'),'mud_bricks':('packed_mud','cobblestone'),'packed_mud':('mud_bricks','cobblestone'),
+ 'sandstone':('cut_sandstone','smooth_sandstone'),'cut_sandstone':('smooth_sandstone','sandstone'),'smooth_sandstone':('cut_sandstone','sandstone'),'quartz_block':('quartz_bricks','smooth_stone'),'calcite':('polished_diorite','stone'),'diorite':('polished_diorite','cobblestone'),'polished_diorite':('quartz_bricks','diorite'),
+ 'granite':('polished_granite','cobblestone'),'polished_granite':('granite','cobblestone'),'prismarine':('prismarine_bricks','dark_prismarine'),'prismarine_bricks':('dark_prismarine','prismarine'),
+ 'oak_planks':('oak_log|','cobblestone'),'spruce_planks':('spruce_log|','cobblestone'),'dark_oak_planks':('dark_oak_log|','cobbled_deepslate'),'pale_oak_planks':('pale_oak_log|','stone'),'birch_planks':('birch_log|','stone'),
+ 'jungle_planks':('jungle_log|','cobblestone'),'mangrove_planks':('mangrove_log|','mud_bricks'),'cherry_planks':('cherry_log|','stone_bricks'),'acacia_planks':('acacia_log|','cobblestone'),'bamboo_planks':('bamboo_block|','cobblestone'),'crimson_planks':('crimson_stem|','blackstone')}
+SBm=np.zeros(B.shape,bool); SBm[bs]=True
+def nb2(dx,dz,dy): return SBm[np.clip(bs[0]+dx,0,NX-1),np.clip(bs[1]+dz,0,NZ-1),np.clip(bs[2]+dy,0,NY-1)]
+ex_x=~nb2(1,0,0)|~nb2(-1,0,0); ex_z=~nb2(0,1,0)|~nb2(0,-1,0); ex_up=~nb2(0,0,1)
+vedge=ex_x&ex_z&(nb2(0,0,1)|nb2(0,0,-1))
+tedge=ex_up&(ex_x|ex_z)&~vedge
+plinth=(bs[2]<=gt[bs[0],bs[1]]+1)&(ex_x|ex_z)&~vedge&~tedge
+del SBm
+istrim=np.array([n in TRIM for n in bn])
+nt=0
+for msk,kk in ((vedge,0),(tedge,0),(plinth,1)):
+    for i in np.nonzero(msk&istrim)[0]:
+        t=TRIM[bn[i]][kk]
+        if t.endswith('|'): t=t+('y' if msk is vedge else ('x' if ex_z[i] else 'z'))
+        bn[i]=t; nt+=1
+print('trims',nt,flush=True)
 un,inv=np.unique(bn,return_inverse=True)
-ids=np.array([0 if n.startswith('@') else BP(n) for n in un],np.uint16)
+ids=np.array([0 if n.startswith('@') else (P(n.split('|')[0],axis=n.split('|')[1]) if '|' in n else BP(n)) for n in un],np.uint16)
 B[bs]=ids[inv]
 solid_build=np.zeros(B.shape,bool); solid_build[bs]=True
 def nbi(dx,dz,dy):

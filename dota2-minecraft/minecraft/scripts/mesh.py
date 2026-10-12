@@ -51,7 +51,7 @@ def tex3(n):
         if x not in FILES: return ('stone',)*3
     return t,s,b
 CROSS={'short_grass','fern','bush','firefly_bush','dead_bush','short_dry_grass','tall_dry_grass','red_mushroom','brown_mushroom','seagrass','cave_vines','cave_vines_plant','pale_hanging_moss','hanging_roots','copper_torch','soul_torch','iron_chain','sea_pickle','spore_blossom',
- 'poppy','dandelion','cornflower','oxeye_daisy','azure_bluet','allium','blue_orchid','red_tulip','orange_tulip','pink_tulip','white_tulip','lily_of_the_valley','torchflower'}
+ 'amethyst_cluster','poppy','dandelion','cornflower','oxeye_daisy','azure_bluet','allium','blue_orchid','red_tulip','orange_tulip','pink_tulip','white_tulip','lily_of_the_valley','torchflower'}
 TALL={'tall_grass','large_fern','tall_seagrass'}
 FLAT={'leaf_litter','pink_petals','wildflowers','moss_carpet','pale_moss_carpet','lily_pad'}
 # classify palette

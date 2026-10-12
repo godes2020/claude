@@ -2,42 +2,39 @@
 
 `dota2_map.litematic` is a Litematica schematic for Minecraft 1.21.11 (DataVersion 4667).
 
-- Size: 956 × 111 × 1004 blocks (X × Y × Z), 1.85 blocks per metre of the original map.
-- About 5.4 million blocks, 257 block types, 818 block states. Every state was checked against the 1.21.11 block list.
+- Size: 956 × 111 × 1004 blocks (X × Y × Z), 1.85 blocks per metre of the original map (about 1k × 1k).
+- About 5.26 million blocks, 142 block types, 430 block states. Every state was checked against the 1.21.11 block list.
 - Orientation: the Radiant base is at small X / large Z (south-west), and the Dire base is at large X / small Z (north-east).
 
 ## What's in it
 
-- Terrain:
-  - Radiant: grass, podzol, moss and paths (dirt_path, gravel, coarse dirt).
-  - Dire: coarse dirt, packed mud, tuff, lava and magma.
-  - Cliffs are made of stone, tuff, deepslate and cobblestone, chosen by the texture colour.
+- Terrain is made of solid full blocks laid out in large, even patches (smoothed colour plus a majority filter), with no single-block speckle:
+  - Radiant: grass, podzol and moss, with stone, andesite and cobblestone patches.
+  - Dire: coarse dirt, packed mud, rooted dirt, gravel and soul soil.
+  - Lanes and paths: coarse dirt, packed mud, gravel, stone bricks.
+  - There is no lava. Lava areas are magma_block.
+- Cliffs and slopes use smooth low-frequency patches:
+  - Radiant: stone, andesite, tuff and cobblestone, with mossy cobblestone under the grass.
+  - Dire: tuff, deepslate, cobbled deepslate and blackstone.
 - River:
   - water whose depth grows towards the middle;
   - bed of mud, clay, gravel and sand;
-  - seagrass, tall seagrass, sea pickles and lily pads.
-- Trees (about 300k log blocks and 517k leaf blocks), with log and leaf types chosen per Dota tree kind:
-  - pine → spruce;
-  - oak → oak, dark oak, azalea;
-  - blossom → cherry;
-  - Dire trees → dark oak, pale oak, nether wart;
-  - bamboo → bamboo.
-- Tree details:
-  - thin branches made of fences that connect to each other;
-  - buttons on trunks;
-  - twig fences;
-  - cave vines with glow berries, pale hanging moss, hanging roots and spore blossoms;
-  - leaf litter and pale moss carpet under the canopy.
+  - seagrass, sea pickles and lily pads.
+- Trees are generated procedurally from 4,715 Dota tree positions, each with its own height and crown size:
+  - pines are layered spruces with drooping branch tips;
+  - oaks have thick trunks, branches, several crown clumps, roots with buttons, vines and cave vines;
+  - blossom trees use cherry, pale oak and flowering azalea leaves;
+  - Dire trees are crooked dark oak and pale oak with twig fences, hanging moss and mangrove roots at the base;
+  - there are also bamboo and bushes.
 - Buildings (towers, barracks, fountains, shops, camps):
-  - stairs on slopes and roofs;
-  - walls and fences on thin posts, with lanterns on top;
-  - chains with hanging lanterns (copper, regular and soul) under overhangs;
-  - lit candles and torches (copper and soul);
-  - pale_oak_shelf / dark_oak_shelf for the shops, decorated pots, barrels and amethyst.
+  - full blocks only, so roofs, overhangs and floors have no gaps;
+  - each building material uses 1–3 blocks, smoothed between neighbours;
+  - no stairs, wall or fence posts, shelves or hanging lanterns;
+  - decorations are kept on top: candles, torches, the lanterns of sight, pots, barrels and the Dire chains.
 - Grass:
-  - short and tall grass, ferns, bushes, wildflowers, pink petals and flowers coloured from the map;
-  - firefly bushes by the water;
-  - dry grass and dead bushes in the Dire.
+  - grass, ferns, flowers and wildflowers;
+  - moss carpet patches under the trees;
+  - dry grass in the Dire.
 
 ## How to use it
 
@@ -46,11 +43,13 @@ Put the file in `.minecraft/schematics/` (Litematica + MaLiLib for 1.21.11). Pas
 ## Scripts (`scripts/`)
 
 1. `export_tris.py` (Blender): exports the map's triangles from the glTF.
-2. `voxelize.py`, `aggregate.py`: voxelize the triangles and sample texture colours.
-3. `palette.py`: computes average colours from the real 1.21.11 textures.
-4. `build.py`, `build2.py`: choose the blocks and add the details.
-5. `write_lit.py`: writes the .litematic file.
-6. `mesh.py`, `render_mc.py`: make the lit render in Blender Cycles with Minecraft textures.
+2. `trees.py`: finds the tree instances (type, position, height, crown) and masks them out of the voxelization.
+3. `voxelize.py`, `aggregate.py`: voxelize the triangles and sample texture colours (`S=1.85 OD=<dir>`).
+4. `palette.py`: computes average colours from the real 1.21.11 textures.
+5. `build.py`: terrain, cliffs, water and buildings.
+6. `build2.py`: procedural trees, vegetation and connections.
+7. `write_lit.py`, `write_schem.py`: write the .litematic and .schem files.
+8. `mesh.py`, `render_mc.py`: make the lit render in Blender Cycles with Minecraft textures.
 
 ## WorldEdit (.schem)
 
@@ -61,4 +60,4 @@ Put the file in `.minecraft/schematics/` (Litematica + MaLiLib for 1.21.11). Pas
 //paste -a
 ```
 
-Use FAWE for the paste: the build has 5.4 million blocks. Generated by `scripts/write_schem.py`.
+Use FAWE for the paste: the build has 5.26 million blocks.

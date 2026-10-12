@@ -1,14 +1,14 @@
 import numpy as np, json, time
 from scipy import ndimage as ndi
-T=time.time(); D='/home/user/dota_work/mc/'
+import os
+T=time.time(); D='/home/user/dota_work/mc/'; OD=os.environ['OD']
 meta=json.load(open(D+'meta.json')); MN=[m['name'].lower() for m in meta['mats']]
 PAL=json.load(open(D+'palette.json'))
-CAT=np.load(D+'CAT.npy'); COL=np.load(D+'COL.npy'); MAT=np.load(D+'MAT.npy')
-B=np.load(D+'B_stage1.npy'); pal=json.load(open(D+'pal_stage1.json')); pid={s:i for i,s in enumerate(pal)}
-NX,NZ,NY=B.shape; pd=NY-CAT.shape[2]
-pad=lambda a,v: np.concatenate([a,np.full(a.shape[:2]+(pd,)+a.shape[3:],v,a.dtype)],axis=2)
-CAT=pad(CAT,0); COL=pad(COL,0); MAT=pad(MAT,-1)
-SG=np.load(D+'stage_ground.npz'); gt,inside,water,wl,DIRE=SG['gt'],SG['inside'],SG['water'],SG['wl'],SG['DIRE']
+CAT=np.load(OD+'CAT.npy',mmap_mode='r'); COL=np.load(OD+'COL.npy',mmap_mode='r'); MAT=np.load(OD+'MAT.npy',mmap_mode='r')
+B=np.load(OD+'B_stage1.npy'); pal=json.load(open(OD+'pal_stage1.json')); pid={s:i for i,s in enumerate(pal)}
+NX,NZ,NY=B.shape
+G=json.load(open(OD+'grid.json')); S,XMAX,YMAX=G['S'],G['XMAX'],G['YMAX']; F=S/1.85
+SG=np.load(OD+'stage_ground.npz'); gt,inside,water,wl,DIRE=SG['gt'],SG['inside'],SG['water'],SG['wl'],SG['DIRE']
 rng=np.random.default_rng(11)
 def P(name,**pr):
     s='minecraft:'+name+('['+','.join(f'{k}={str(v).lower()}' for k,v in sorted(pr.items()))+']' if pr else '')
@@ -25,118 +25,248 @@ def nearest(cols,names,src,gain=1.0,noise=6.0,pen=None):
     return (np.sqrt((2+rm/256)*dr*dr+4*dg*dg+(2+(255-rm)/256)*db*db)+pn).argmin(1)
 def autogain(cols,ref):
     return float(np.clip(lum(np.array(ref,np.float32))/max(np.median(lum(cols.astype(np.float32))),1),0.6,2.5))
-# --------- families ----------
-OAKL=['oak_leaves','dark_oak_leaves','jungle_leaves','azalea_leaves','flowering_azalea_leaves','mangrove_leaves','acacia_leaves','birch_leaves','moss_block']
-FAM=[ # prefix, log radiant, log dire, leaves list
- ('tree_pine','spruce_log','spruce_log',['spruce_leaves','dark_oak_leaves','mangrove_leaves','oak_leaves']),
- ('tree_oak','oak_log','dark_oak_log',OAKL),
- ('tree_redblossom','dark_oak_log','dark_oak_log',['nether_wart_block','shroomlight','acacia_leaves','cherry_leaves','oak_leaves','dark_oak_leaves']),
- ('tree_blossoms_white','cherry_log','cherry_log',['cherry_leaves','pale_oak_leaves','birch_leaves','flowering_azalea_leaves','oak_leaves']),
- ('tree_magical_white','birch_log','birch_log',['pale_oak_leaves','birch_leaves','cherry_leaves','oak_leaves']),
- ('tree_magical_pink','cherry_log','cherry_log',['cherry_leaves','flowering_azalea_leaves','pale_oak_leaves']),
- ('tree_plumblossom','cherry_log','cherry_log',['cherry_leaves','flowering_azalea_leaves']),
- ('tree_bamboo','bamboo_block','bamboo_block',['jungle_leaves','azalea_leaves','oak_leaves','acacia_leaves']),
- ('dire_tree','dark_oak_log','dark_oak_log',['pale_oak_leaves','dark_oak_leaves','moss_block','mangrove_leaves','spruce_leaves']),
- ('tree_gnarly','pale_oak_log','pale_oak_log',['pale_oak_leaves','dark_oak_leaves']),
- ('tree_cine','oak_log','dark_oak_log',OAKL),
- ('roots','mangrove_log','mangrove_log',['azalea_leaves','oak_leaves','mangrove_leaves','flowering_azalea_leaves']),
- ('radiant_ancient','oak_log','oak_log',['flowering_azalea_leaves','azalea_leaves','oak_leaves','cherry_leaves']),
- ('team_portal','oak_log','oak_log',['flowering_azalea_leaves','azalea_leaves','oak_leaves']),
-]
-fam_of=np.full(len(MN)+1,1,np.int16)
-for i,n in enumerate(MN):
-    for f,(p,_,_,_) in enumerate(FAM):
-        if n.startswith(p): fam_of[i]=f; break
-# ---------- wood -------------
-wood=(CAT==7)
-ws=np.nonzero(wood); wf=fam_of[MAT[ws]]; wdire=DIRE[ws[0],ws[1]]
-wc=COL[ws]
-cnt=ndi.convolve(wood.astype(np.uint8),np.ones((3,3,3),np.uint8),mode='constant')[ws]
-ax_cnt=np.stack([wood[np.clip(ws[0]+1,0,NX-1),ws[1],ws[2]].astype(int)+wood[np.clip(ws[0]-1,0,NX-1),ws[1],ws[2]],
-                 wood[ws[0],np.clip(ws[1]+1,0,NZ-1),ws[2]].astype(int)+wood[ws[0],np.clip(ws[1]-1,0,NZ-1),ws[2]],
-                 wood[ws[0],ws[1],np.clip(ws[2]+1,0,NY-1)].astype(int)+wood[ws[0],ws[1],np.clip(ws[2]-1,0,NY-1)]],1)
-ax_cnt[:,2]+=1  # prefer vertical
-axis=np.array(['x','z','y'])[ax_cnt.argmax(1)]
-logname=np.array([FAM[f][2] if d else FAM[f][1] for f,d in zip(wf,wdire)],object)
-dt=(wf==8)|(wf==9)
-l=lum(wc.astype(np.float32))
-logname[dt&(l>np.percentile(l[dt],70))]='pale_oak_log'
-logname[dt&(l<np.percentile(l[dt],15))]='spruce_log'
-thin=cnt<=4
-FENCE={'oak_log':'oak_fence','spruce_log':'spruce_fence','dark_oak_log':'dark_oak_fence','pale_oak_log':'pale_oak_fence','cherry_log':'cherry_fence','birch_log':'birch_fence','mangrove_log':'mangrove_fence','bamboo_block':'bamboo_fence'}
-BUTTON={'oak_log':'oak_button','spruce_log':'spruce_button','dark_oak_log':'dark_oak_button','pale_oak_log':'pale_oak_button','cherry_log':'cherry_button','birch_log':'birch_button','mangrove_log':'mangrove_button','bamboo_block':'bamboo_button'}
-key=np.char.add(logname.astype(str),np.char.add('|',np.where(thin,'F',axis)))
-un,inv=np.unique(key,return_inverse=True)
-ids=[]
-for k in un:
-    n,a=k.split('|')
-    ids.append(P(FENCE[n],east='false',north='false',south='false',west='false',waterlogged='false') if a=='F' else P(n,axis=a))
-B[ws]=np.array(ids,np.uint16)[inv]
-print('wood',len(ws[0]),'fences',thin.sum(),time.time()-T,flush=True)
-# ---------- leaves -------------
-lv=(CAT==6)
-ls=np.nonzero(lv); lf=fam_of[MAT[ls]]; lc=COL[ls]
-names=np.empty(len(ls[0]),object)
-for f,(p,_,_,lst) in enumerate(FAM):
-    m=lf==f
-    if not m.any(): continue
-    pen={'moss_block':15,'shroomlight':20 if f!=2 else -10,'nether_wart_block':-45 if f==2 else 0,'birch_leaves':18 if f in (1,10) else 0}
-    k=nearest(lc[m],lst,'leaves',autogain(lc[m],PAL['leaves'][lst[0]]),8,pen)
-    names[m]=np.array(lst,object)[k]
-    if f==2:  # red autumn trees: texture is a grey tintable, force red/orange foliage
-        r=rng.random(m.sum()); ll=lum(lc[m].astype(np.float32)); dk=ll<np.percentile(ll,25)
-        names[m]=np.where(dk,'dark_oak_leaves',np.where(r<0.08,'shroomlight',np.where(r<0.18,'acacia_leaves','nether_wart_block')))
-un,inv=np.unique(names,return_inverse=True)
-B[ls]=np.array([LP(n) for n in un],np.uint16)[inv]
-print('leaves',len(ls[0]),dict(zip(un,np.bincount(inv))),time.time()-T,flush=True)
-# ---------- vines -------------
-vs=np.nonzero(CAT==3); nv=0
-solid=B>0
-for x,z,y in zip(*vs):
-    if B[x,z,y]: continue
-    pr={'east':solid[min(x+1,NX-1),z,y],'west':solid[max(x-1,0),z,y],'south':solid[x,min(z+1,NZ-1),y],'north':solid[x,max(z-1,0),y],'up':solid[x,z,min(y+1,NY-1)]}
-    if any(pr.values()): B[x,z,y]=P('vine',**{k:str(bool(v)).lower() for k,v in pr.items()}); nv+=1
-print('vines',nv,time.time()-T,flush=True)
-# ---------- tree details: buttons on trunks, hanging vines/moss -------------
+
+# ================= procedural natural trees =================
 air=lambda x,z,y: 0<=x<NX and 0<=z<NZ and 0<=y<NY and B[x,z,y]==0
 DIRS=[('east',1,0),('west',-1,0),('south',0,1),('north',0,-1)]
-nb=0
-for i in np.nonzero(~thin&(rng.random(len(ws[0]))<0.02))[0]:
-    x,z,y=ws[0][i],ws[1][i],ws[2][i]
-    d,dx,dz=DIRS[int(rng.integers(4))]
-    if air(x+dx,z+dz,y) and y>gt[x,z]: B[x+dx,z+dz,y]=P(BUTTON[logname[i]],face='wall',facing=d,powered='false'); nb+=1
-# small trunk details: fences sticking out as twigs
-ntw=0
-for i in np.nonzero(~thin&(rng.random(len(ws[0]))<0.006))[0]:
-    x,z,y=ws[0][i],ws[1][i],ws[2][i]
-    d,dx,dz=DIRS[int(rng.integers(4))]
-    if air(x+dx,z+dz,y) and air(x+dx,z+dz,y+1) and y>gt[x,z]+2:
-        B[x+dx,z+dz,y]=P(FENCE[logname[i]],east='false',north='false',south='false',west='false',waterlogged='false'); ntw+=1
-lbot=np.nonzero(lv&~np.roll(lv,1,axis=2))  # leaf voxels with no leaf below
-nhang=0
-for x,z,y in zip(*lbot):
-    if not (B[x,z,y]>0 and B[x,z,y-1]==0 and y-1>gt[x,z]+2): continue
-    r=rng.random()
-    if DIRE[x,z]:
-        if r<0.10:
-            L=int(rng.integers(1,5))
-            for k in range(1,L+1):
-                if not air(x,z,y-k) or y-k<=gt[x,z]+1: L=k-1; break
-                B[x,z,y-k]=P('pale_hanging_moss',tip='false')
-            if L>0: B[x,z,y-L]=P('pale_hanging_moss',tip='true'); nhang+=1
-    else:
-        if r<0.035:
-            L=int(rng.integers(1,6))
-            for k in range(1,L+1):
-                if not air(x,z,y-k) or y-k<=gt[x,z]+1: L=k-1; break
-                B[x,z,y-k]=P('cave_vines_plant',berries=str(rng.random()<0.3).lower())
-            if L>0: B[x,z,y-L]=P('cave_vines',age=int(rng.integers(0,26)),berries=str(rng.random()<0.4).lower()); nhang+=1
-        elif r<0.04: B[x,z,y-1]=P('spore_blossom'); nhang+=1
-        elif r<0.05: B[x,z,y-1]=P('hanging_roots',waterlogged='false')
-print('buttons',nb,'twigs',ntw,'hanging',nhang,time.time()-T,flush=True)
+LEAFIDS=set()
+def LPi(n):
+    k=LP(n); LEAFIDS.add(k); return k
+CAN=np.zeros((NX,NZ),bool)
+def put_leaves(xs,zs,ys,names,probs):
+    ok=(xs>=0)&(xs<NX)&(zs>=0)&(zs<NZ)&(ys>=0)&(ys<NY)
+    xs,zs,ys=xs[ok],zs[ok],ys[ok]
+    cur=B[xs,zs,ys]; free=cur==0
+    xs,zs,ys=xs[free],zs[free],ys[free]
+    ids=np.array([LPi(n) for n in names],np.uint16)
+    B[xs,zs,ys]=ids[rng.choice(len(ids),len(xs),p=np.array(probs)/sum(probs))]
+    CAN[xs,zs]=True
+    return xs,zs,ys
+def blob(cx,cz,cy,rx,ry,names,probs,rough=0.35,rz=None):
+    rz=rx if rz is None else rz
+    R=int(np.ceil(max(rx,rz)))+1; Ry=int(np.ceil(ry))+1
+    gx,gz,gy=np.mgrid[-R:R+1,-R:R+1,-Ry:Ry+1]
+    d=(gx/rx)**2+(gz/rz)**2+(gy/ry)**2
+    keep=d<=1-rough*rng.random(d.shape)
+    return put_leaves(gx[keep]+int(round(cx)),gz[keep]+int(round(cz)),gy[keep]+int(round(cy)),names,probs)
+def setlog(x,z,y,name,axis='y',force=False):
+    if 0<=x<NX and 0<=z<NZ and 0<=y<NY and (force or B[x,z,y]==0 or B[x,z,y] in LEAFIDS):
+        B[x,z,y]=P(name,axis=axis); return True
+    return False
+def line(p0,p1,name,th=1):
+    p0=np.array(p0,float); p1=np.array(p1,float); d=p1-p0; n=int(np.ceil(np.abs(d).max()*1.5))+1
+    ax=['x','z','y'][int(np.argmax(np.abs(d)))]
+    for t in np.linspace(0,1,n):
+        q=p0+d*t
+        for a in range(th):
+            for b in range(th):
+                setlog(int(round(q[0]))+a,int(round(q[1]))+b,int(round(q[2])),name,ax)
+FENCE={'oak_log':'oak_fence','spruce_log':'spruce_fence','dark_oak_log':'dark_oak_fence','pale_oak_log':'pale_oak_fence','cherry_log':'cherry_fence','birch_log':'birch_fence','mangrove_log':'mangrove_fence'}
+BUTTON={'oak_log':'oak_button','spruce_log':'spruce_button','dark_oak_log':'dark_oak_button','pale_oak_log':'pale_oak_button','cherry_log':'cherry_button','birch_log':'birch_button','mangrove_log':'mangrove_button'}
+def fence(x,z,y,log):
+    if air(x,z,y): B[x,z,y]=P(FENCE[log],east='false',north='false',south='false',west='false',waterlogged='false')
+def trunk(x,z,y0,y1,log,th=1):
+    # extend down to solid ground
+    for a in range(th):
+        for b in range(th):
+            yy=y0-1
+            while yy>0 and B[x+a,z+b,yy]==0 and y0-yy<6: setlog(x+a,z+b,yy,log); yy-=1
+            for y in range(y0,y1): setlog(x+a,z+b,y,log,force=B[x+a,z+b,y]==0 or B[x+a,z+b,y] in LEAFIDS)
+def roots(x,z,y,log,th,n,L):
+    for k in rng.permutation(4)[:n]:
+        d,dx,dz=DIRS[k]
+        ox=x+(th if dx>0 else -1 if dx<0 else int(rng.integers(th)))
+        oz=z+(th if dz>0 else -1 if dz<0 else int(rng.integers(th)))
+        for i in range(L):
+            if not setlog(ox+dx*i,oz+dz*i,y,log,'x' if dx else 'z'): break
+            if i==L-1 and air(ox+dx*(i+1),oz+dz*(i+1),y): B[ox+dx*(i+1),oz+dz*(i+1),y]=P(BUTTON[log],face='floor',facing=d,powered='false')
+def buttons(x,z,y0,y1,log,th,n):
+    for _ in range(n):
+        d,dx,dz=DIRS[int(rng.integers(4))]; y=int(rng.integers(y0,max(y0+1,y1)))
+        bx=x+(th if dx>0 else -1 if dx<0 else int(rng.integers(th))); bz=z+(th if dz>0 else -1 if dz<0 else int(rng.integers(th)))
+        if air(bx,bz,y): B[bx,bz,y]=P(BUTTON[log],face='wall',facing=d,powered='false')
+def trunk_vines(x,z,y0,y1,th,p):
+    for d,dx,dz in DIRS:
+        if rng.random()>p: continue
+        opp={'east':'west','west':'east','north':'south','south':'north'}[d]
+        bx=x+(th if dx>0 else -1 if dx<0 else int(rng.integers(th))); bz=z+(th if dz>0 else -1 if dz<0 else int(rng.integers(th)))
+        top=int(rng.integers(y0+1,max(y0+2,y1)))
+        for y in range(top,max(y0,top-int(rng.integers(2,6))),-1):
+            if air(bx,bz,y): B[bx,bz,y]=P('vine',**{k:('true' if k==opp else 'false') for k in ('east','west','north','south','up')})
+def hang(xs,zs,ys,p,kind,maxlen):
+    if len(xs)==0: return
+    # bottom leaves of the canopy
+    for x,z,y in zip(xs,zs,ys):
+        if rng.random()>p or not air(x,z,y-1) or B[x,z,y] not in LEAFIDS: continue
+        L=int(rng.integers(1,maxlen+1)); k=0
+        while k<L and air(x,z,y-1-k) and y-1-k>gt[x,z]+2: k+=1
+        if k==0: continue
+        for j in range(1,k+1):
+            last=j==k
+            if kind=='moss': B[x,z,y-j]=P('pale_hanging_moss',tip='true' if last else 'false')
+            elif kind=='cave': B[x,z,y-j]=P('cave_vines',age=int(rng.integers(0,26)),berries=str(rng.random()<0.4).lower()) if last else P('cave_vines_plant',berries=str(rng.random()<0.25).lower())
+            elif kind=='roots': B[x,z,y-j]=P('hanging_roots',waterlogged='false'); break
+LEAVES={
+ 'green_r':(['oak_leaves','azalea_leaves','flowering_azalea_leaves','dark_oak_leaves'],[55,20,7,18]),
+ 'green_d':(['dark_oak_leaves','spruce_leaves','mangrove_leaves'],[60,25,15]),
+ 'red':(['nether_wart_block','dark_oak_leaves','oak_leaves','shroomlight'],[62,20,13,5]),
+ 'white':(['cherry_leaves','pale_oak_leaves','birch_leaves','flowering_azalea_leaves'],[35,25,20,20]),
+ 'magic_white':(['pale_oak_leaves','birch_leaves','cherry_leaves'],[60,25,15]),
+ 'pink':(['cherry_leaves','flowering_azalea_leaves'],[80,20]),
+ 'pine':(['spruce_leaves'],[1]),
+ 'dire_big':(['dark_oak_leaves','pale_oak_leaves','moss_block','mangrove_leaves','spruce_leaves'],[45,20,10,10,15]),
+ 'dire_small':(['dark_oak_leaves','pale_oak_leaves','nether_wart_block'],[50,35,15]),
+ 'gnarly':(['pale_oak_leaves','moss_block','dark_oak_leaves'],[70,10,20]),
+ 'bush_r':(['azalea_leaves','oak_leaves','flowering_azalea_leaves','jungle_leaves'],[40,30,20,10]),
+ 'bush_d':(['dark_oak_leaves','spruce_leaves','mangrove_leaves','pale_oak_leaves'],[45,25,15,15]),
+}
+def petals(x,z,r,n,name='pink_petals'):
+    for _ in range(n):
+        a=x+int(rng.integers(-r,r+1)); b=z+int(rng.integers(-r,r+1))
+        if 0<=a<NX and 0<=b<NZ and not water[a,b]:
+            y=gt[a,b]+1
+            if air(a,b,y): B[a,b,y]=P(name,facing=DIRS[int(rng.integers(4))][0],**({'flower_amount':int(rng.integers(1,5))} if name!='leaf_litter' else {'segment_amount':int(rng.integers(1,5))}))
+def t_pine(x,z,y,h,w,dire):
+    H=int(max(8,h*S*1.05)); R=max(2.2,w*S*0.5)
+    trunk(x,z,y,y+H-1,'spruce_log')
+    yb=int(H*0.22); lay=y+yb; layers=[]
+    k=0
+    while lay<y+H:
+        t=(lay-y-yb)/max(1,H-yb); r=R*(1-t)**1.05+0.6
+        hgt=max(1,int(round(1.0*F)))
+        layers.append((lay,r,hgt)); lay+=hgt+(1 if r>1.5 else 0)
+    for (ly,r,hgt) in layers:
+        gx,gz=np.mgrid[-int(r)-1:int(r)+2,-int(r)-1:int(r)+2]
+        d=np.sqrt(gx**2+gz**2); keep=d<=r-0.4*rng.random(d.shape)
+        for j in range(hgt):
+            rr=keep&(d<=r*(1-0.25*j/hgt))
+            put_leaves(gx[rr]+x,gz[rr]+z,np.full(rr.sum(),ly+j),*LEAVES['pine'])
+        # drooping tips
+        tip=(d>r-1.2)&keep&(rng.random(d.shape)<0.35)
+        put_leaves(gx[tip]+x,gz[tip]+z,np.full(tip.sum(),ly-1),*LEAVES['pine'])
+    put_leaves(np.array([x,x]),np.array([z,z]),np.array([y+H-1,y+H]),*LEAVES['pine'])
+    if rng.random()<0.5:  # dead twig under the lowest layer
+        d,dx,dz=DIRS[int(rng.integers(4))]; fence(x+dx,z+dz,layers[0][0]-1,'spruce_log')
+    buttons(x,z,y+1,y+yb,'spruce_log',1,1)
+    petals(x,z,int(R),int(R*R*0.4),'leaf_litter')
+def crown(x,z,y,th,H,W,log,leaf,nbr,flat=1.0,thick_br=1):
+    tops=[]
+    for i in range(nbr):
+        a=rng.uniform(0,2*np.pi)+i*2*np.pi/nbr; L=W*rng.uniform(0.28,0.42)
+        sy=y+int(th*rng.uniform(0.65,1.0)); ey=sy+L*rng.uniform(0.35,0.8)
+        ex=x+np.cos(a)*L; ez=z+np.sin(a)*L
+        line((x,z,sy),(ex,ez,ey),log,thick_br)
+        tops.append((ex,ez,ey))
+        if rng.random()<0.6:  # twig out of the crown
+            fx,fz=int(round(x+np.cos(a)*(L+W*0.25))),int(round(z+np.sin(a)*(L+W*0.25)))
+            fence(fx,fz,int(ey)+int(rng.integers(-1,2)),log)
+    tops.append((x,z,y+th+H*0.12))
+    cells=[]
+    for (cx,cz,cy) in tops:
+        rx=W*rng.uniform(0.22,0.3); ry=max(1.6,rx*0.62*flat)
+        cells.append(blob(cx,cz,cy+ry*0.35,rx,ry,*LEAVES[leaf]))
+    xs=np.concatenate([c[0] for c in cells]); zs=np.concatenate([c[1] for c in cells]); ys=np.concatenate([c[2] for c in cells])
+    return xs,zs,ys
+def bottoms(xs,zs,ys):
+    if len(xs)==0: return xs,zs,ys
+    k=xs.astype(np.int64)*NZ+zs; o=np.lexsort((ys,k)); k,xs,zs,ys=k[o],xs[o],zs[o],ys[o]
+    f=np.r_[True,k[1:]!=k[:-1]]; return xs[f],zs[f],ys[f]
+def t_oak(x,z,y,h,w,leaf,dire):
+    H=max(7.0,h*S); W=max(5.0,w*S*0.95)
+    log={'green':'dark_oak_log' if dire else 'oak_log','red':'dark_oak_log','white':'birch_log','magic_white':'pale_oak_log','pink':'cherry_log'}[leaf]
+    lk={'green':'green_d' if dire else 'green_r'}.get(leaf,leaf)
+    th_=2 if H>=15 else 1
+    tt=int(H*0.42)
+    trunk(x,z,y,y+tt+1,log,th_)
+    xs,zs,ys=crown(x,z,y,tt,H,W,log,lk,int(rng.integers(3,6)),1.0,1)
+    roots(x,z,y,log,th_,int(rng.integers(2,5)),max(1,int(F)))
+    buttons(x,z,y+1,y+tt,log,th_,int(rng.integers(1,3)))
+    bx,bz,by=bottoms(xs,zs,ys)
+    if not dire and leaf=='green':
+        trunk_vines(x,z,y,y+tt,th_,0.35); hang(bx,bz,by,0.05,'cave',int(3*F))
+    elif dire: hang(bx,bz,by,0.06,'moss',int(3*F))
+    if leaf in ('pink','white'): petals(x,z,int(W*0.5),int(W*W*0.35))
+    else: petals(x,z,int(W*0.45),int(W*W*0.2),'leaf_litter')
+def t_dire_small(x,z,y,h,w):
+    H=max(7.0,h*S*0.95); log='dark_oak_log' if rng.random()<0.7 else 'pale_oak_log'
+    k=int(H*0.45); dx,dz=DIRS[int(rng.integers(4))][1:]
+    trunk(x,z,y,y+k,log); trunk(x+dx,z+dz,y+k,y+int(H*0.8),log)
+    tx,tz=x+dx,z+dz; leaves=[]
+    for i in range(int(rng.integers(3,6))):
+        a=rng.uniform(0,2*np.pi); L=max(2.0,w*S*rng.uniform(0.3,0.5)); sy=y+int(H*rng.uniform(0.45,0.8))
+        ex,ez=tx+np.cos(a)*L*0.5,tz+np.sin(a)*L*0.5
+        line((tx,tz,sy),(ex,ez,sy+L*0.4),log)
+        # fence twig continuing outward and up
+        fx,fz=int(round(tx+np.cos(a)*L)),int(round(tz+np.sin(a)*L)); fy=int(sy+L*0.6)
+        fence(fx,fz,fy,log); fence(fx,fz,fy+1,log)
+        if rng.random()<0.65: leaves.append(blob(fx,fz,fy+1,max(1.2,0.6*F),max(1.0,0.5*F),*LEAVES['dire_small'],rough=0.5))
+    roots(x,z,y,log,1,int(rng.integers(1,4)),1)
+    buttons(x,z,y+1,y+k,log,1,1)
+    if leaves:
+        xs=np.concatenate([c[0] for c in leaves]); zs=np.concatenate([c[1] for c in leaves]); ys=np.concatenate([c[2] for c in leaves])
+        hang(*bottoms(xs,zs,ys),0.35,'moss',int(4*F))
+    petals(x,z,2,4,'leaf_litter')
+def t_big(x,z,y,h,w,kind):
+    H=max(10.0,h*S); W=max(7.0,w*S*0.95)
+    log='pale_oak_log' if kind=='gnarly' else ('dark_oak_log' if rng.random()<0.8 else 'spruce_log')
+    th_=2 if (S>=3 or kind=='gnarly') else 1
+    tt=int(H*0.45)
+    trunk(x,z,y,y+tt+1,log,th_)
+    xs,zs,ys=crown(x,z,y,tt,H*0.9,W,log,kind if kind=='gnarly' else 'dire_big',int(rng.integers(4,7)),0.75,1)
+    # root flare of mangrove roots and logs
+    for a in range(-1,th_+1):
+        for b in range(-1,th_+1):
+            if rng.random()<0.55 and air(x+a,z+b,y): B[x+a,z+b,y]=P('mangrove_roots',waterlogged='false')
+    roots(x,z,y,log,th_,int(rng.integers(3,5)),max(2,int(1.5*F)))
+    buttons(x,z,y+1,y+tt,log,th_,2)
+    trunk_vines(x,z,y,y+tt,th_,0.3)
+    hang(*bottoms(xs,zs,ys),0.14,'moss',int(5*F))
+    petals(x,z,int(W*0.5),int(W*W*0.25),'leaf_litter')
+    for _ in range(int(W)):  # pale moss carpet patches
+        a=x+int(rng.integers(-int(W*0.5),int(W*0.5)+1)); b=z+int(rng.integers(-int(W*0.5),int(W*0.5)+1))
+        if 0<=a<NX and 0<=b<NZ and air(a,b,gt[a,b]+1): B[a,b,gt[a,b]+1]=P('pale_moss_carpet',bottom='true',east='none',north='none',south='none',west='none')
+def t_bamboo(x,z,y,h,w):
+    n=max(5,int(w*S*1.2)); r=max(1.5,w*S*0.42)
+    for _ in range(n):
+        a=x+int(round(rng.uniform(-r,r))); b=z+int(round(rng.uniform(-r,r)))
+        if not(0<=a<NX and 0<=b<NZ) or water[a,b]: continue
+        y0=gt[a,b]+1; hh=int(max(5,h*S*rng.uniform(0.6,1.05))); age=int(rng.random()<0.6)
+        for j in range(hh):
+            if not air(a,b,y0+j): break
+            lv='large' if j>=hh-2 else ('small' if j==hh-3 else 'none')
+            B[a,b,y0+j]=P('bamboo',age=age,leaves=lv,stage=0)
+def t_bush(x,z,y,h,w,kind):
+    rx=max(1.6,w*S*0.3); ry=max(1.1,h*S*0.75)
+    blob(x+rng.uniform(-0.5,0.5),z+rng.uniform(-0.5,0.5),y+ry*0.25,rx,ry,*LEAVES[kind],rough=0.45,rz=rx*rng.uniform(0.7,1.2))
+    if rng.random()<0.5: blob(x+rng.uniform(-rx,rx)*0.6,z+rng.uniform(-rx,rx)*0.6,y,rx*0.6,ry*0.8,*LEAVES[kind],rough=0.45)
+TR=json.load(open(D+'trees.json')); order=rng.permutation(len(TR)); cnt={}
+for i in order:
+    t=TR[i]; x=int((YMAX-t['y'])*S); z=int((XMAX-t['x'])*S)
+    if not(2<=x<NX-3 and 2<=z<NZ-3) or not inside[x,z] or water[x,z]: continue
+    y=int(gt[x,z])+1; dire=bool(DIRE[x,z]); k=t['t']
+    if k=='pine': t_pine(x,z,y,t['h'],t['w'],dire)
+    elif k=='oak': t_oak(x,z,y,t['h'],t['w'],t['leaf'],dire)
+    elif k=='dire_small': t_dire_small(x,z,y,t['h'],t['w'])
+    elif k=='dire_big': t_big(x,z,y,t['h'],t['w'],'dire_big')
+    elif k=='gnarly': t_big(x,z,y,t['h'],t['w'],'gnarly')
+    elif k=='bamboo': t_bamboo(x,z,y,t['h'],t['w'])
+    elif k in ('bush_r','bush_d'): t_bush(x,z,y,t['h'],t['w'],k)
+    cnt[k]=cnt.get(k,0)+1
+print('trees',cnt,time.time()-T,flush=True)
+# leftover tree voxels (ancient tree, portal tree, roots): logs + azalea leaves
+ws=np.nonzero(np.asarray(CAT)==7); ls=np.nonzero(np.asarray(CAT)==6)
+m=B[ws]==0; B[ws[0][m],ws[1][m],ws[2][m]]=P('mangrove_log',axis='y')
+m=B[ls]==0; B[ls[0][m],ls[1][m],ls[2][m]]=np.array([LPi('flowering_azalea_leaves'),LPi('azalea_leaves')],np.uint16)[rng.integers(0,2,m.sum())]
+# ---------- vines -------------
+vs=np.nonzero(np.asarray(CAT)==3); nv=0
+for x,z,y in zip(*vs):
+    if B[x,z,y]: continue
+    pr={'east':B[min(x+1,NX-1),z,y]>0,'west':B[max(x-1,0),z,y]>0,'south':B[x,min(z+1,NZ-1),y]>0,'north':B[x,max(z-1,0),y]>0,'up':B[x,z,min(y+1,NY-1)]>0}
+    if any(pr.values()): B[x,z,y]=P('vine',**{k:str(bool(v)).lower() for k,v in pr.items()}); nv+=1
+print('vines',nv,time.time()-T,flush=True)
 # ---------- ground vegetation -------------
-canopy=ndi.maximum_filter((lv.any(2)).astype(np.uint8),5)>0
-Lp=np.load(D+'L_plant.npz'); Hp,Cp,Mp=Lp['H'],Lp['C'],Lp['M']
+canopy=ndi.maximum_filter(CAN.astype(np.uint8),int(3*F)+2)>0
+Lp=np.load(OD+'L_plant.npz'); Hp,Cp,Mp=Lp['H'],Lp['C'],Lp['M']
 pname=np.array(MN+[''],object)[np.where(Mp>=0,Mp,len(MN))]
 topid=B[np.arange(NX)[:,None],np.arange(NZ)[None,:],np.clip(gt,0,NY-1)]
 topn=np.array([s.split('[')[0].split(':')[1] for s in pal],object)[topid]
@@ -144,8 +274,9 @@ gx,gz=np.nonzero(inside&~water)
 ok=np.array([air(x,z,gt[x,z]+1) for x,z in zip(gx,gz)])
 gx,gz=gx[ok],gz[ok]
 FLW=['poppy','dandelion','cornflower','oxeye_daisy','azure_bluet','allium','blue_orchid','red_tulip','orange_tulip','pink_tulip','white_tulip','lily_of_the_valley','torchflower']
-nearwater=ndi.binary_dilation(water,iterations=6)
+nearwater=ndi.binary_dilation(water,iterations=int(6*F))
 stats={}
+_g=ndi.gaussian_filter(rng.random((NX,NZ)).astype(np.float32),3*F); PATCH=(_g-_g.mean())/_g.std()
 def put(x,z,y,n,**pr):
     B[x,z,y]=P(n,**pr); stats[n]=stats.get(n,0)+1
 def tall(x,z,y,n):
@@ -156,7 +287,6 @@ for x,z in zip(gx,gz):
     plant=pn!='' and gt[x,z]-1<=Hp[x,z]<=gt[x,z]+4
     soil=t in ('grass_block','moss_block','podzol','rooted_dirt','dirt','coarse_dirt','pale_moss_block','mud','packed_mud','mycelium')
     if not soil: 
-        if r<0.01 and t in ('gravel','stone','andesite','tuff','cobblestone'): put(x,z,y,'stone_button' if not DIRE[x,z] else 'polished_blackstone_button',face='floor',facing=HORZ[int(rng.integers(4))],powered='false')
         continue
     if plant and pn.startswith('flowers_'):
         if r<0.55:
@@ -181,8 +311,8 @@ for x,z in zip(gx,gz):
         continue
     if DIRE[x,z]:
         if canopy[x,z]:
-            if r<0.25: put(x,z,y,'pale_moss_carpet',bottom='true',east='none',north='none',south='none',west='none')
-            elif r<0.40: put(x,z,y,'leaf_litter',facing=HORZ[int(rng.integers(4))],segment_amount=int(rng.integers(1,5)))
+            if PATCH[x,z]>0.8 and r<0.9: put(x,z,y,'pale_moss_carpet',bottom='true',east='none',north='none',south='none',west='none')
+            elif r<0.12: put(x,z,y,'leaf_litter',facing=HORZ[int(rng.integers(4))],segment_amount=int(rng.integers(1,5)))
             elif r<0.43: put(x,z,y,'brown_mushroom')
             elif r<0.45: put(x,z,y,'dead_bush')
         else:
@@ -190,12 +320,11 @@ for x,z in zip(gx,gz):
             elif r<0.14: put(x,z,y,'tall_dry_grass')
             elif r<0.16: put(x,z,y,'dead_bush')
             elif r<0.165: put(x,z,y,'brown_mushroom')
-            elif r<0.17: put(x,z,y,'polished_blackstone_button',face='floor',facing=HORZ[int(rng.integers(4))],powered='false')
     else:
         if canopy[x,z]:
-            if r<0.25: put(x,z,y,'leaf_litter',facing=HORZ[int(rng.integers(4))],segment_amount=int(rng.integers(1,5)))
+            if PATCH[x,z]>0.9 and r<0.9: put(x,z,y,'moss_carpet')
+            elif r<0.12: put(x,z,y,'leaf_litter',facing=HORZ[int(rng.integers(4))],segment_amount=int(rng.integers(1,5)))
             elif r<0.33: put(x,z,y,'fern')
-            elif r<0.37: put(x,z,y,'moss_carpet')
             elif r<0.39: tall(x,z,y,'large_fern')
             elif r<0.40: put(x,z,y,'red_mushroom' if rng.random()<0.4 else 'brown_mushroom')
             elif r<0.42: put(x,z,y,'bush')
@@ -244,5 +373,5 @@ for x,z,y in zip(fx,fz,fy):
         pr['up']=str(up or B[x,z,y+1]!=0).lower()
     k=P(n,waterlogged='false',**pr); isF[k]=connF[k]=not w; isW[k]=connW[k]=w
 print('connections',len(fx),time.time()-T,flush=True)
-np.save(D+'B_final.npy',B); json.dump(pal,open(D+'pal_final.json','w'))
+np.save(OD+'B_final.npy',B); json.dump(pal,open(OD+'pal_final.json','w'))
 print('DONE',len(pal),(B>0).sum(),time.time()-T)

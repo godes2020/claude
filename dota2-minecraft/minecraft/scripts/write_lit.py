@@ -1,6 +1,6 @@
 import numpy as np, json, gzip, struct, time, sys
 D='/home/user/dota_work/mc/'
-B=np.load(D+'B_final.npy'); pal=json.load(open(D+'pal_final.json'))
+import os; OD=os.environ.get('OD',D); B=np.load(OD+'B_final.npy'); pal=json.load(open(OD+'pal_final.json'))
 bl={b['name']:b for b in json.load(open(D+'npm/mcd/package/minecraft-data/data/pc/1.21.11/blocks.json'))}
 DEF={'axis':'y','snowy':'false','waterlogged':'false','powered':'false'}
 entries=[]

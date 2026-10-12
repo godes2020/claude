@@ -3,10 +3,11 @@ from PIL import Image
 Image.MAX_IMAGE_PIXELS=None
 T=time.time()
 D='/home/user/dota_work/mc/'
-S=1.85; XMAX=268.7; YMAX=257.1; ZMIN=-12.0
-X=np.load(D+'xyz.npy',mmap_mode='r'); UVA=np.load(D+'uv.npy',mmap_mode='r'); MA=np.load(D+'mat.npy'); meta=json.load(open(D+'meta.json'))
+import os
+S=float(os.environ.get('S','1.85')); OD=os.environ.get('OD',D); os.makedirs(OD,exist_ok=True); XMAX=268.7; YMAX=257.1; ZMIN=-12.0
+X=np.load(D+'xyz.npy',mmap_mode='r'); UVA=np.load(D+'uv.npy',mmap_mode='r'); MA=np.load(D+'mat.npy'); TOM=np.load(D+'tree_obj_mask.npy')[np.load(D+'obj.npy')]; meta=json.load(open(D+'meta.json'))
 mats=meta['mats']; NM=len(mats)
-NX=int((YMAX+259.0)*S)+2; NZ=int((XMAX+273.2)*S)+2; NY=int((48-ZMIN)*S)+2
+NX=int((YMAX+259.0)*S)+2; NZ=int((XMAX+273.2)*S)+2; NY=int((48-ZMIN)*S)+2+int(6*S/1.85)
 print('GRID',NX,NY,NZ)
 def cat(n):
     n=n.lower()
@@ -50,8 +51,8 @@ def sample(a,u,v):
     return a[y,x]
 rng=np.random.default_rng(1)
 area=0.5*np.linalg.norm(np.cross(X[:,1]-X[:,0],X[:,2]-X[:,0]),axis=1)
-DENS=6.0
-K=np.clip(np.ceil(area*S*S*DENS),1,20000).astype(np.int64)
+DENS=float(os.environ.get('DENS','6.0'))
+K=np.clip(np.ceil(area*S*S*DENS),1,80000).astype(np.int64); K[TOM]=0
 print('SAMPLES',K.sum(),time.time()-T)
 CH=400000
 OUT={c:[] for c in ('vox','decal','plant','water')}
@@ -108,7 +109,7 @@ for s0 in range(0,len(X),CH):
     print('chunk',s0,len(ti),time.time()-T,flush=True)
 for kname,lst in OUT.items():
     arrs=[np.concatenate([l[i] for l in lst]) for i in range(4)]
-    np.savez(D+f'raw_{kname}.npz',a=arrs[0],b=arrs[1],c=arrs[2],m=arrs[3])
+    np.savez(OD+f'raw_{kname}.npz',a=arrs[0],b=arrs[1],c=arrs[2],m=arrs[3])
     print('SAVED',kname,len(arrs[0]))
-json.dump({'NX':NX,'NY':NY,'NZ':NZ,'S':S,'XMAX':XMAX,'YMAX':YMAX,'ZMIN':ZMIN,'CATS':CATS,'CI':CI},open(D+'grid.json','w'))
+json.dump({'NX':NX,'NY':NY,'NZ':NZ,'S':S,'XMAX':XMAX,'YMAX':YMAX,'ZMIN':ZMIN,'CATS':CATS,'CI':CI},open(OD+'grid.json','w'))
 print('DONE',time.time()-T)

@@ -2,7 +2,7 @@
 import numpy as np, json, os, time, sys
 from PIL import Image
 T=time.time(); D='/home/user/dota_work/mc/'; TX=D+'npm/mca/package/minecraft-assets/data/1.21.11/blocks/'
-B=np.load(D+'B_final.npy'); pal=json.load(open(D+'pal_final.json'))
+import os; OD=os.environ.get('OD',D); B=np.load(OD+'B_final.npy'); pal=json.load(open(OD+'pal_final.json'))
 NX,NZ,NY=B.shape
 def parse(s):
     n=s.split('[')[0].split(':')[1]; pr=dict(p.split('=') for p in s[s.index('[')+1:-1].split(',')) if '[' in s else {}
@@ -60,7 +60,7 @@ for i,(n,pr) in enumerate(PS):
     if n=='air': continue
     if n=='water': kind[i]=2
     elif n=='lava': kind[i]=3
-    elif n in CROSS or n in TALL or n in FLAT or n=='vine' or n.endswith(('_stairs','_wall','_fence','_button','lantern','candle','_shelf','torch')) or n=='decorated_pot': kind[i]=4
+    elif n in CROSS or n in TALL or n in FLAT or n=='vine' or n.endswith(('_stairs','_wall','_fence','_button','lantern','candle','_shelf','torch')) or n in ('decorated_pot','bamboo'): kind[i]=4
     else: kind[i]=1
 K=kind[B]
 V=[];F=[];UV=[];M=[]  # M: 0 opaque,1 cutout,2 water,3 lava(emissive)
@@ -85,7 +85,7 @@ def tile_for(i,face):
         endf={'x':('east','west'),'z':('north','south')}[ax]
         name=t if face in endf else s
     else: name=t if face=='top' else (b if face=='bottom' else s)
-    return tile(name,opaque=('leaves' in name or n=='moss_block'))
+    return tile(name,opaque=('leaves' in name or n=='moss_block' or 'mangrove_roots' in name))
 tilemap={}
 pad=np.zeros((NX+2,NZ+2,NY+2),bool); pad[1:-1,1:-1,1:-1]=opq
 fx,fz,fy=np.nonzero(full)
@@ -141,6 +141,10 @@ for x,z,y in zip(px,pz,py):
         tn={'cave_vines':'cave_vines_lit' if pr.get('berries')=='true' else 'cave_vines','cave_vines_plant':'cave_vines_plant_lit' if pr.get('berries')=='true' else 'cave_vines_plant','pale_hanging_moss':'pale_hanging_moss_tip' if pr.get('tip')=='true' else 'pale_hanging_moss'}.get(n,n)
         if n=='spore_blossom': flat(x,z,y,tile('spore_blossom'),0.97); continue
         cross(x,z,y,tile(tn),0.8 if n in('sea_pickle','red_mushroom','brown_mushroom') else 1.0)
+    elif n=='bamboo':
+        ts=tile('bamboo_stalk'); box(x,z,y,0.41,0.59,0.41,0.59,0,1,ts)
+        lv=pr.get('leaves','none')
+        if lv!='none': cross(x,z,y,tile('bamboo_large_leaves' if lv=='large' else 'bamboo_small_leaves'))
     elif n in TALL: cross(x,z,y,tile(n+('_top' if pr['half']=='upper' else '_bottom')))
     elif n in FLAT: flat(x,z,y,tile(n),0.02 if n!='lily_pad' else 0.06)
     elif n=='vine':

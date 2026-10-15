@@ -1,0 +1,41 @@
+{
+  "textures": {
+    "0": "spectra_aurelium_skills:skill_ship",
+    "particle": "spectra_aurelium_skills:skill_ship"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        22,
+        24,
+        0
+      ],
+      "faces": {
+        "south": {
+          "uv": [
+            3,
+            2,
+            14,
+            14
+          ],
+          "texture": "#0"
+        }
+      }
+    }
+  ],
+  "gui_light": "front",
+  "display": {
+    "gui": {
+      "translation": [
+        34.75,
+        0,
+        0
+      ]
+    }
+  }
+}

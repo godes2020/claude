@@ -1,0 +1,10 @@
+{
+  "model": {
+    "type": "minecraft:special",
+    "base": "spectra_aurelium_skills:item/skills_head",
+    "model": {
+      "type": "minecraft:player_head"
+    }
+  },
+  "oversized_in_gui": true
+}

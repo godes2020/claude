@@ -1,0 +1,5 @@
+author: Spectra (порт под CraftEngine)
+version: 0.1
+description: Анимированные меню AuraSkills
+namespace: spectra_aurelium_skills
+enable: true

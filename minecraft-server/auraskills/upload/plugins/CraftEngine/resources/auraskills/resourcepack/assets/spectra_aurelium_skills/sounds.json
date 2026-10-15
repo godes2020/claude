@@ -1,0 +1,4 @@
+{
+    "open_grimoire":{"category":"player","sounds":[{"name":"spectra_aurelium_skills:open_grimoire","volume": 1}]},
+    "close_grimoire":{"category":"player","sounds":[{"name":"spectra_aurelium_skills:close_grimoire","volume": 1}]}
+}

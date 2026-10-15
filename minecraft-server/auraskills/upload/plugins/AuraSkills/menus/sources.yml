@@ -1,0 +1,115 @@
+title: '<white><font:spectra_aurelium_skills:gui></font>'
+size: 6
+fill:
+  enabled: false
+  material: black_stained_glass_pane
+  amount: 1
+  glow: false
+items:
+  back:
+    pos: 0,0
+    material: BRICK
+    item_model: spectra_aurelium_skills:skill_empty_slot
+    display_name: <white>{{back}}
+    lore:
+    - <gray>{{back_click}}
+    amount: 1
+    glow: false
+  next_page:
+    pos: 3,8
+    material: BRICK
+    item_model: spectra_aurelium_skills:book_next_nav
+    display_name: <white>{{next_page}}
+    amount: 1
+    glow: false
+  next_page(1):
+    pos: 2,8
+    material: BRICK
+    item_model: spectra_aurelium_skills:skill_empty_slot
+    display_name: <white>{{next_page}}
+    amount: 1
+    glow: false
+  previous_page:
+    pos: 3,0
+    material: BRICK
+    item_model: spectra_aurelium_skills:book_previous_nav
+    display_name: <white>{{previous_page}}
+    amount: 1
+    glow: false
+  previous_page(1):
+    pos: 2,0
+    material: BRICK
+    item_model: spectra_aurelium_skills:skill_empty_slot
+    display_name: <white>{{previous_page}}
+    amount: 1
+    glow: false
+  sorter:
+    pos: 0,8
+    material: BRICK
+    item_model: spectra_aurelium_skills:skill_empty_slot
+    display_name: <white>{{sorter}}
+    lore:
+    - ' '
+    - '{sort_types[\n]}'
+    - ' '
+    - <gray>→ {{sort_click}}
+    amount: 1
+    glow: false
+
+templates:
+  source:
+    material: gray_dye
+    display_name: <white>{source_name}
+    lore:
+    - ' '
+    - '<gray> ▪ {xp_unit}: {source_xp}'
+    - component: multiplied_xp
+    amount: 1
+    glow: false
+components:
+  multiplied_xp:
+    context: XpSource
+    lore:
+    - '<gray> ▪ {{multiplied_xp}}: {source_xp}'
+    - text: '{{multiplied_desc}}'
+      wrap: true
+      style: <dark_gray>
+      smart_wrap: true
+      wrap_indent: ''
+formats:
+  sort_type_entry: <gray>{selected}{type_name}
+  selected: '<#82CD47>▸ '
+  source_xp: <#82CD47>{xp}
+  source_xp_rate: <#82CD47>{xp}/{unit}
+options:
+  items_per_page: 28
+  use_track: true
+  track:
+  - 10
+  - 11
+  - 12
+  - 14
+  - 15
+  - 16
+  - 19
+  - 20
+  - 21
+  - 23
+  - 24
+  - 25
+  - 28
+  - 29
+  - 30
+  - 32
+  - 33
+  - 34
+  - 37
+  - 38
+  - 39
+  - 41
+  - 42
+  - 43
+  source_start: 1,1
+  source_end: 4,8
+  xp_format: '#.##'
+  income_format: '0.00'

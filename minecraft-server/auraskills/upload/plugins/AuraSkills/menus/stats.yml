@@ -1,0 +1,102 @@
+title: '<white><font:spectra_aurelium_skills:gui></font>'
+size: 6
+fill:
+  enabled: false
+  material: black_stained_glass_pane
+items:
+  skull:
+    pos: 1,2
+    material: player_head
+    item_model: spectra_aurelium_skills:skills_head
+    display_name: '<#86A7FC>{player}'
+    lore:
+    - '{entries[\n]}'
+  skull(1):
+    pos: 1,3
+    material: BRICK
+    display_name: '<#86A7FC>{player}'
+    item_model: spectra_aurelium_skills:skill_empty_slot
+    lore:
+    - '{entries[\n]}'
+  skull(2):
+    pos: 2,2
+    material: BRICK
+    display_name: '<#86A7FC>{player}'
+    item_model: spectra_aurelium_skills:skill_empty_slot
+    lore:
+    - '{entries[\n]}'
+  skull(3):
+    pos: 2,3
+    material: BRICK
+    display_name: '<#86A7FC>{player}'
+    item_model: spectra_aurelium_skills:skill_empty_slot
+    lore:
+    - '{entries[\n]}'
+  back:
+    pos: 0,1
+    material: BRICK
+    item_model: spectra_aurelium_skills:skill_empty_slot
+    display_name: '<white>{{back}}'
+    lore:
+    - '<gray>{{back_click}}'
+
+  item:
+    pos: 5,0
+    material: BRICK
+    item_model: spectra_aurelium_skills:stats_animation
+    display_name: ' '
+    lore:
+    - ' '
+
+templates:
+  stat:
+    contexts:
+      health: {group: upper_left, order: 1, material: brick, item_model: spectra_aurelium_skills:skill_empty_slot}
+      regeneration: {group: upper_left, order: 2, material: brick, item_model: spectra_aurelium_skills:skill_empty_slot}
+      speed: {group: upper_left, order: 3, material: brick, item_model: spectra_aurelium_skills:skill_empty_slot}
+      strength: {group: upper_right, order: 1, material: brick, item_model: spectra_aurelium_skills:skill_empty_slot}
+      luck: {group: upper_right, order: 2, material: brick, item_model: spectra_aurelium_skills:skill_empty_slot}
+      toughness: {group: upper_right, order: 3, material: brick, item_model: spectra_aurelium_skills:skill_empty_slot}
+      wisdom: {group: lower, order: 1, material: brick, item_model: spectra_aurelium_skills:skill_empty_slot}
+      crit_chance: {group: lower, order: 2, material: brick, item_model: spectra_aurelium_skills:skill_empty_slot}
+      crit_damage: {group: lower, order: 3, material: brick, item_model: spectra_aurelium_skills:skill_empty_slot}
+
+    groups:
+      upper_left:
+        start: 1,0
+        end: 1,7
+        align: right
+      upper_right:
+        start: 2,0
+        end: 2,7
+        align: right
+      lower:
+        start: 3,0
+        end: 3,7
+        align: right
+    display_name: '<#86A7FC>{stat}'
+    lore:
+    - text: '{stat_desc}'
+      wrap: true
+      style: '<gray>'
+    - component: leveled_by
+    - ' '
+    - ' <gray>▪ <gray>{{your_level}}: <#86A7FC>{level}'
+    - ' '
+    - '{traits[\n]}'
+components:
+  leveled_by:
+    context: Stat
+    lore:
+    - ' '
+    - text: ' <1>▪ {{skills}}: \n   <2>{skills[,<white> ]}'
+      wrap: false
+      styles:
+        1: '<gray>'
+        2: '<white>'
+formats:
+  player_stat_entry: '{color}{symbol} {stat} <white>{level}'
+  trait_entry: ' <#82CD47>+ <#d0d0d0>{trait}: <#86A7FC>{level}'
+  luck_trait_desc_chance: ' <dark_gray>({chance})'
+  luck_trait_desc_added: ' <dark_gray>({added})'
+  luck_trait_desc_both: ' <dark_gray>({added}, {chance})'

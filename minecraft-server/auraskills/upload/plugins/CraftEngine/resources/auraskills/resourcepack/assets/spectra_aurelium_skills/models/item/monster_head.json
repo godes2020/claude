@@ -1,0 +1,41 @@
+{
+  "textures": {
+    "0": "spectra_aurelium_skills:monster_head",
+    "particle": "spectra_aurelium_skills:monster_head"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        0
+      ],
+      "to": [
+        18,
+        30,
+        0
+      ],
+      "faces": {
+        "south": {
+          "uv": [
+            5,
+            1,
+            14,
+            16
+          ],
+          "texture": "#0"
+        }
+      }
+    }
+  ],
+  "gui_light": "front",
+  "display": {
+    "gui": {
+      "translation": [
+        -37,
+        -43.5,
+        0
+      ]
+    }
+  }
+}

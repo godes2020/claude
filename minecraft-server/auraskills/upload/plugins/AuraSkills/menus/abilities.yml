@@ -1,0 +1,135 @@
+title: '<white><font:spectra_aurelium_skills:gui></font>'
+size: 6
+fill:
+  enabled: false
+  material: black_stained_glass_pane
+items:
+
+  back:
+    pos: 0,1
+    material: BRICK
+    item_model: spectra_aurelium_skills:skill_empty_slot
+    display_name: '<white>{{back}}'
+    lore:
+    - '<gray>{{back_click}}'
+  skull:
+    skull_meta:
+      placeholder_uuid: '{player}'
+    pos: 1,2
+    material: player_head
+    item_model: spectra_aurelium_skills:skills_head
+    display_name: ''
+templates:
+  locked_ability:
+    options:
+      slots:
+      - '14'
+      - '15'
+      - '16'
+      - '23'
+      - '24'
+      - '25'
+    material: BRICK
+    item_model: spectra_aurelium_skills:icon_ability_locked
+    display_name: '<#cf3932><bold>{name}'
+    lore:
+    - ' <gray>▪ <white>{{description}}:'
+    - text: ' {desc}'
+      wrap: true
+      wrap_indent: '  '
+      style: '<gray>'
+    - ' '
+    - text: ' <gray>▪ {{unlocked_at}}'
+      styles:
+        1: '<gray>'
+        2: '<#86A7FC>'
+    - ' '
+    - '<#cf3932> → {{locked}}'
+  locked_mana_ability:
+    pos: 3,6
+    material: BRICK
+    item_model: spectra_aurelium_skills:icon_mana_locked
+    display_name: '<#cf3932><bold>{name}'
+    lore:
+    - ' <gray>▪ <white>{{description}}:'
+    - text: ' {desc}'
+      wrap: true
+      wrap_indent: '  '
+      styles:
+        0: '<gray>'
+        1: '<dark_gray>'
+    - ' '
+    - text: '{{unlocked_at}}'
+      styles:
+        1: '<gray>'
+        2: '<#86A7FC>'
+    - ' '
+    - '<#cf3932> → {{locked}}'
+  unlocked_ability:
+    slots:
+    options:
+      slots:
+      - '14'
+      - '15'
+      - '16'
+      - '23'
+      - '24'
+      - '25'
+    material: BRICK
+    item_model: spectra_aurelium_skills:icon_ability
+    display_name: '<white><bold>{name}'
+    lore:
+    - component: your_level
+    - component: your_level_maxed
+    - ' '
+    - component: unlocked_desc
+    - component: unlocked_desc_maxed
+    - ' '
+    - '<#82CD47> → {{unlocked}}'
+  unlocked_mana_ability:
+    pos: 3,6
+    material: BRICK
+    item_model: spectra_aurelium_skills:icon_mana
+    display_name: '<white><bold>{name}'
+    lore:
+    - component: your_level
+    - component: your_level_maxed
+    - ' '
+    - component: unlocked_desc
+    - component: unlocked_desc_maxed
+    - ' '
+    - '<#82CD47> → {{unlocked}}'
+components:
+  your_level:
+    context: AbstractAbility
+    lore:
+    - ' <gray>▪ <white>{{your_level}}: <#86A7FC>{level}'
+  your_level_maxed:
+    context: AbstractAbility
+    lore:
+    - ' <gray>▪ <white>{{your_level}}: <#86A7FC>{level} <gold>(МАКС.)'
+  unlocked_desc:
+    context: AbstractAbility
+    lore:
+    - text: ' <gray>▪ {{next_upgrade_at}}'
+      styles:
+        1: '<white>'
+        2: '<#86A7FC>'
+    - text: ' {desc}'
+      wrap: true
+      wrap_indent: '  '
+      styles:
+        0: '<gray>'
+        1: '<dark_gray>'
+  unlocked_desc_maxed:
+    context: AbstractAbility
+    lore:
+    - ' <gray>▪ <white>{{description}}:'
+    - text: ' {desc}'
+      wrap: true
+      wrap_indent: '  '
+      styles:
+        0: '<gray>'
+        1: '<dark_gray>'
+formats:
+  desc_upgrade_value: '<gray>{current}<dark_gray>→{next}<gray>'

@@ -1,0 +1,76 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "spectra_aurelium_skills:skills_menu_book.png",
+      "height": 256,
+      "ascent": 48,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "spectra_aurelium_skills:abilities_menu.png",
+      "height": 256,
+      "ascent": 48,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "spectra_aurelium_skills:progress_menu.png",
+      "height": 256,
+      "ascent": 48,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "spectra_aurelium_skills:stats_menu.png",
+      "height": 256,
+      "ascent": 48,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "spectra_aurelium_skills:leaderboard_menu.png",
+      "height": 256,
+      "ascent": 48,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "spectra_aurelium_skills:book_all_squares.png",
+      "height": 256,
+      "ascent": 48,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "bitmap",
+      "file": "spectra_aurelium_skills:xp_bar_white.png",
+      "height": 7,
+      "ascent": 6,
+      "chars": [
+        ""
+      ]
+    },
+    {
+      "type": "space",
+      "advances": {
+        "": -2,
+        "": -12,
+        "": -18,
+        "": -20
+      }
+    }
+  ]
+}

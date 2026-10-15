@@ -1,0 +1,41 @@
+{
+  "textures": {
+    "0": "spectra_aurelium_skills:back_bookmark",
+    "particle": "spectra_aurelium_skills:back_bookmark"
+  },
+  "elements": [
+    {
+      "from": [
+        0,
+        0,
+        2
+      ],
+      "to": [
+        17,
+        24,
+        2
+      ],
+      "faces": {
+        "south": {
+          "uv": [
+            3.5,
+            2,
+            12.5,
+            14
+          ],
+          "texture": "#0"
+        }
+      }
+    }
+  ],
+  "gui_light": "front",
+  "display": {
+    "gui": {
+      "translation": [
+        -1,
+        4.5,
+        0
+      ]
+    }
+  }
+}

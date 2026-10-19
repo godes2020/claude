@@ -1,0 +1,156 @@
+# ==========================================================
+#   Шипохват — легендарное оружие
+#   После изменения настроек: /shipokhvat reload
+#   Уже выданные мечи обновятся автоматически
+#   (урон, название, описание, модель).
+#   Все времена указаны в секундах (можно дробные: 2.5).
+# ==========================================================
+
+item:
+  # Базовый предмет. Модель берётся из ресурс-пака, поэтому сам предмет
+  # можно не менять.
+  material: NETHERITE_SWORD
+  # Модель из ресурс-пака (компонент item_model, 1.21.4+).
+  # Соответствует файлу assets/shipokhvat/items/shipokhvat.json
+  # Пустая строка "" — оставить ванильную модель.
+  item-model: "shipokhvat:shipokhvat"
+  # Старый способ через CustomModelData (0 = не использовать).
+  custom-model-data: 0
+  # Урон с удара (как в описании меча: 17 = 8.5 сердец без брони)
+  damage: 17.0
+  # Скорость атаки (у ванильного меча 1.6)
+  attack-speed: 1.6
+  unbreakable: true
+  # Сияние как у зачарованного предмета
+  glint: false
+  # MiniMessage: https://docs.advntr.dev/minimessage/format.html
+  name: "<gradient:#3f8f3a:#a3e05a><bold>Шипохват</bold></gradient>"
+  # Плейсхолдеры: {damage} {root_duration} {root_cooldown}
+  #               {pull_range} {pull_damage} {pull_cooldown}
+  lore:
+    - "<gray>Легендарное оружие</gray>"
+    - ""
+    - "<green>ПКМ</green> <dark_gray>—</dark_gray> <white>Хватка лозы</white>"
+    - "<gray>Следующий удар опутывает цель лозой</gray>"
+    - "<gray>на <white>{root_duration}с</white>. КД: <white>{root_cooldown}с</white></gray>"
+    - ""
+    - "<green>Shift + ПКМ</green> <dark_gray>—</dark_gray> <white>Притягивание</white>"
+    - "<gray>Лоза притягивает цель с <white>{pull_range}</white> блоков</gray>"
+    - "<gray>и наносит <red>{pull_damage}❤</red> сквозь броню. КД: <white>{pull_cooldown}с</white></gray>"
+
+# ----------------------------------------------------------
+# Способность 1: ПКМ — следующий удар опутывает цель лозой
+# ----------------------------------------------------------
+root:
+  enabled: true
+  cooldown: 60
+  # Сколько секунд цель обездвижена
+  duration: 3
+  # Сколько секунд держится «заряд» после ПКМ. Если за это время не ударить,
+  # заряд пропадает. 0 = держится, пока не ударишь.
+  arm-timeout: 15
+  # true  — КД начинается сразу при нажатии ПКМ
+  # false — КД начинается при попадании (промах не тратит способность)
+  cooldown-on-activate: false
+  # Действует ли на мобов (на игроков действует всегда)
+  affect-mobs: true
+  # Запрет поворачивать камеру
+  lock-rotation: true
+  # Опускать цель на землю, если она в воздухе (максимум блоков вниз)
+  snap-to-ground: 4
+  # Запрет эндер-жемчуга (бросок и телепорт уже летящей жемчужины)
+  block-ender-pearls: true
+  # Какие телепорты запрещены опутанному игроку
+  # (ENDER_PEARL, CONSUMABLE_EFFECT = хорус, и т.д.)
+  blocked-teleport-causes:
+    - ENDER_PEARL
+    - CONSUMABLE_EFFECT
+    - CHORUS_FRUIT
+  visual:
+    # Стебли лозы вокруг цели (выбираются по кругу)
+    stalk-blocks:
+      - TWISTING_VINES_PLANT
+      - WEEPING_VINES_PLANT
+      - CAVE_VINES_PLANT
+    stalk-count: 7
+    stalk-height: 2.1
+    radius: 0.55
+    # Блок «паутины» поверх цели ("" = не показывать)
+    web-block: COBWEB
+    web-scale: 1.3
+    # Подстилка под ногами ("" = не показывать)
+    ground-block: MOSS_CARPET
+    # За сколько тиков лоза вырастает (20 тиков = 1 сек)
+    grow-ticks: 6
+  sounds:
+    arm: "minecraft:block.vine.step"
+    hit: "minecraft:block.rooted_dirt.place"
+    hit2: "minecraft:entity.evoker_fangs.attack"
+    release: "minecraft:block.vine.break"
+
+# ----------------------------------------------------------
+# Способность 2: Shift + ПКМ — лоза притягивает цель
+# ----------------------------------------------------------
+pull:
+  enabled: true
+  cooldown: 30
+  # КД при промахе (0 = без КД)
+  miss-cooldown: 5
+  # Максимальная дальность, блоков
+  range: 20
+  # Урон при попадании, в сердцах (1 = одно сердце)
+  damage-hearts: 1.0
+  # true — урон проходит сквозь броню, зачарования на защиту и сопротивление
+  true-damage: true
+  affect-mobs: true
+  # Скорость полёта лозы, блоков за тик
+  vine-speed: 2.5
+  # Скорость притягивания, блоков за тик
+  pull-speed: 1.1
+  # На каком расстоянии от владельца цель останавливается
+  stop-distance: 2.0
+  # Максимальная длительность притягивания в тиках (20 = 1 сек)
+  max-pull-ticks: 30
+  visual:
+    # Из какого блока «сделана» лоза
+    vine-block: MOSS_BLOCK
+    vine-width: 0.16
+    particles: true
+  sounds:
+    shoot: "minecraft:entity.fishing_bobber.throw"
+    hit: "minecraft:block.vine.break"
+    hit2: "minecraft:entity.player.attack.strong"
+    pull: "minecraft:item.trident.riptide_1"
+    miss: "minecraft:block.vine.step"
+
+ui:
+  # Показывать КД способностей над хотбаром, пока меч в руке
+  action-bar: true
+
+messages:
+  prefix: "<dark_green>[<green>Шипохват</green>]</dark_green> "
+  no-permission: "<red>Недостаточно прав."
+  usage: "<gray>/shipokhvat give [игрок] [кол-во] <dark_gray>|</dark_gray> /shipokhvat reload"
+  reloaded: "<green>Конфиг перезагружен."
+  given: "<green>Выдано <white>{amount}</white> шт. игроку <white>{player}</white>."
+  player-not-found: "<red>Игрок не найден."
+  ability-disabled: "<red>Эта способность отключена."
+  on-cooldown: "<red>{ability}</red> <gray>перезаряжается: <white>{time}с</white>"
+  root-name: "Хватка лозы"
+  pull-name: "Притягивание"
+  root-armed: "<green>Следующий удар опутает цель лозой!"
+  root-already-armed: "<yellow>Лоза уже готова — ударь цель."
+  root-expired: "<gray>Заряд лозы рассеялся."
+  root-hit: "<green>Ты опутал <white>{target}</white> лозой!"
+  root-victim: "<red>Тебя опутала лоза!"
+  root-released: "<green>Лоза отпустила тебя."
+  pearl-blocked: "<red>Лоза не даёт бросить жемчуг!"
+  teleport-blocked: "<red>Лоза не даёт телепортироваться!"
+  pull-miss: "<gray>Лоза никого не задела."
+  pull-hit: "<green>Лоза схватила <white>{target}</white>!"
+  pull-victim: "<red>Тебя тянет лоза!"
+  pull-protected: "<red>Эту цель нельзя притянуть."
+  actionbar: "<green>Лоза: {root}</green>  <dark_gray>|</dark_gray>  <aqua>Притягивание: {pull}</aqua>"
+  actionbar-ready: "<white>готово</white>"
+  actionbar-armed: "<yellow>заряжена</yellow>"
+  actionbar-cooldown: "<red>{time}с</red>"

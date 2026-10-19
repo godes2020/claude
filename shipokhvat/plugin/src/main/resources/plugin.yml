@@ -1,0 +1,17 @@
+name: Shipokhvat
+version: '${project.version}'
+main: ru.shipokhvat.ShipokhvatPlugin
+api-version: '1.21'
+description: Легендарное оружие Шипохват
+commands:
+  shipokhvat:
+    description: Управление Шипохватом
+    aliases: [shk]
+    permission: shipokhvat.admin
+permissions:
+  shipokhvat.admin:
+    description: Выдача меча и перезагрузка конфига
+    default: op
+  shipokhvat.bypasscooldown:
+    description: Способности без перезарядки
+    default: false
